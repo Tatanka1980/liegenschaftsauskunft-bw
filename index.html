@@ -266,6 +266,7 @@ button.primary:disabled{opacity:.55;cursor:progress}
   display:flex;align-items:center;justify-content:center;text-align:center;
   padding:20px;font-size:12.5px;color:var(--text-muted);background:var(--surface-2);
 }
+.map3d-loading[hidden]{display:none}
 
 .panel{
   background:var(--surface);
@@ -611,7 +612,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     if (cesiumViewer) return cesiumViewer;
     await loadCesiumLib();
     cesiumViewer = new Cesium.Viewer(els.cesiumContainer, {
-      imageryProvider: new Cesium.OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' }),
+      baseLayer: new Cesium.ImageryLayer(new Cesium.OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' })),
       terrainProvider: new Cesium.EllipsoidTerrainProvider(),
       geocoder: false, baseLayerPicker: false, sceneModePicker: false,
       navigationHelpButton: false, homeButton: false, timeline: false,
