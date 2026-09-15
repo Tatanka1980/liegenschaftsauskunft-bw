@@ -333,7 +333,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
   <header>
     <span class="eyebrow">plan4software · Vertriebs-Werkzeug</span>
     <h1>Liegenschaftsauskunft BW</h1>
-    <p class="subtitle">Adresse eingeben, amtliche Flurstücks- und Gebäudedaten aus dem ALKIS-Kataster des LGL Baden-Württemberg sowie ergänzende Angaben aus OpenStreetMap abrufen.</p>
+    <p class="subtitle">Adresse eingeben, amtliche Flurstücks-, Gebäude- und Nutzungsdaten aus dem ALKIS-Kataster des LGL Baden-Württemberg, Hochwasserrisiko-Angaben der LUBW sowie ergänzende Angaben aus OpenStreetMap abrufen.</p>
   </header>
 
   <div class="search-panel">
@@ -363,6 +363,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
 
   var BW_VIEWBOX = "7.50,49.80,10.50,47.53"; // left,top,right,bottom (lon,lat)
   var WFS_BASE = "https://owsproxy.lgl-bw.de/owsproxy/wfs/WFS_LGL-BW_ALKIS?service=WFS&version=2.0.0&request=GetFeature&outputFormat=application/json&srsName=EPSG:4326";
+  var LUBW_WFS_BASE = "https://rips-gdi.lubw.baden-wuerttemberg.de/arcgis/services/wfs/Ueberschwemmungsgebiet/MapServer/WFSServer?service=WFS&version=2.0.0&request=GetFeature&outputFormat=GEOJSON";
   var BBOX_DELTA = 0.00045; // ~ 35-45m depending on latitude, enough to catch neighbouring bbox candidates
 
   var els = {
@@ -475,6 +476,17 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     return json.features || [];
   }
 
+  async function queryHochwasser(typeName, lat, lon){
+    // LUBW ArcGIS WFS expects bbox as lat,lon,lat,lon (min-lat,min-lon,max-lat,max-lon) — opposite axis order to the LGL WFS above.
+    var d = BBOX_DELTA;
+    var bbox = (lat-d) + ',' + (lon-d) + ',' + (lat+d) + ',' + (lon+d);
+    var url = LUBW_WFS_BASE + '&typeNames=' + typeName + '&bbox=' + bbox;
+    var res = await fetch(url);
+    if (!res.ok) throw new Error('LUBW-WFS-Fehler ' + res.status);
+    var json = await res.json();
+    return json.features || [];
+  }
+
   async function queryOverpass(lat, lon){
     var query = '[out:json][timeout:20];way(around:18,' + lat + ',' + lon + ')[building];out tags geom;';
     var res = await fetch('https://overpass-api.de/api/interpreter', {
@@ -543,21 +555,31 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     return '<dt>' + esc(label) + '</dt><dd>' + esc(value) + (unit ? '<span class="unit">' + esc(unit) + '</span>' : '') + '</dd>';
   }
 
+  function floodField(label, isHit, unknown){
+    if (unknown) return '<dt>' + esc(label) + '</dt><dd class="missing">Nicht abrufbar</dd>';
+    var style = isHit ? ' style="color:var(--missing);font-weight:600"' : '';
+    return '<dt>' + esc(label) + '</dt><dd' + style + '>' + (isHit ? 'Ja' : 'Nein') + '</dd>';
+  }
+
   function render(data){
-    var flur = data.flurstueck, geb = data.gebaeude, osm = data.osm;
+    var flur = data.flurstueck, geb = data.gebaeude, osm = data.osm, nutz = data.nutzung;
     var fp = flur ? flur.properties : null;
     var gp = geb ? geb.properties : null;
+    var np = nutz ? nutz.properties : null;
 
     var flaeche = fp ? fmtNum(fp.amtliche_flaeche) : null;
     var gemeinde = fp ? fp.gemeinde_name : (data.place.address ? (data.place.address.city || data.place.address.town || data.place.address.village) : null);
     var funktion = gp ? gp.gebaeudefunktion_name : null;
     var stockwerke = osm ? (osm['building:levels'] || null) : null;
+    var nutzungsart = np ? np.objektname : null;
+    var hq100Text = data.hochwasserError ? 'n/a' : (data.hq100Hit ? 'Ja' : 'Nein');
 
     var stats = '<div class="stat-row">'
       + statTile('Gemeinde', gemeinde ? esc(gemeinde) : '&ndash;', !gemeinde)
       + statTile('Amtl. Fläche', flaeche ? flaeche + ' m²' : '&ndash;', !flaeche)
       + statTile('Gebäudefunktion', funktion ? esc(funktion) : '&ndash;', !funktion)
-      + statTile('Stockwerke (OSM)', stockwerke ? esc(stockwerke) : '&ndash;', !stockwerke)
+      + statTile('Nutzungsart', nutzungsart ? esc(nutzungsart) : '&ndash;', !nutzungsart)
+      + statTile('Hochwasser HQ100', hq100Text, hq100Text !== 'Ja')
       + '</div>';
 
     var flurstueckBlock = '<div class="record"><div class="record-head"><h2>Flurstück</h2><span class="badge amtlich">Amtlich &middot; ALKIS</span></div>';
@@ -591,6 +613,31 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     }
     gebaeudeBlock += '</div>';
 
+    var nutzungBlock = '<div class="record"><div class="record-head"><h2>Tatsächliche Nutzung</h2><span class="badge amtlich">Amtlich &middot; ALKIS</span></div>';
+    if (data.alkisError){
+      nutzungBlock += '<p class="notice">Katasterdienst (owsproxy.lgl-bw.de) aktuell nicht erreichbar. Firmennetzwerk/Firewall prüfen &ndash; keine Aussage über Vorhandensein möglich.</p>';
+    } else if (np){
+      nutzungBlock += '<dl class="fields">'
+        + field('Nutzungsart', np.objektname)
+        + field('Unterart', np.unterart_name)
+        + '</dl>';
+    } else {
+      nutzungBlock += '<p class="notice">Für diese Koordinate wurde keine tatsächliche Nutzung im ALKIS-Kataster gefunden.</p>';
+    }
+    nutzungBlock += '</div>';
+
+    var hochwasserBlock = '<div class="record"><div class="record-head"><h2>Hochwasserrisiko</h2><span class="badge amtlich">Amtlich &middot; LUBW</span></div>';
+    if (data.hochwasserError){
+      hochwasserBlock += '<p class="notice">Hochwasserdienst (LUBW RIPS-GDI) aktuell nicht erreichbar &ndash; keine Aussage über Vorhandensein möglich.</p>';
+    } else {
+      hochwasserBlock += '<dl class="fields">'
+        + floodField('Amtlich festgesetztes Überschwemmungsgebiet', data.uesgHit)
+        + floodField('Hochwassergefahrenzone HQ100 (statistisch, alle 100 Jahre)', data.hq100Hit)
+        + '</dl>'
+        + '<p class="notice info">Basierend auf den räumlichen Hochwasser-Gebietskulissen der LUBW. Keine Aussage über konkrete Überflutungshöhen oder Versicherbarkeit.</p>';
+    }
+    hochwasserBlock += '</div>';
+
     var osmBlock = '<div class="record"><div class="record-head"><h2>Ergänzende Angaben</h2><span class="badge osm">Community &middot; OSM</span></div>';
     if (data.osmError){
       osmBlock += '<p class="notice">OpenStreetMap-Abfrage (Overpass) aktuell nicht erreichbar oder Zeitüberschreitung. Diese Angaben fehlen für diesen Abruf.</p>';
@@ -606,7 +653,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     }
     osmBlock += '<div class="legend" style="padding:0 16px 14px"><span><i class="amtlich"></i>Amtliche Kataster-Umrisse</span><span><i class="osm"></i>Gebäudeumriss</span></div></div>';
 
-    els.results.innerHTML = stats + flurstueckBlock + gebaeudeBlock + osmBlock;
+    els.results.innerHTML = stats + flurstueckBlock + gebaeudeBlock + nutzungBlock + hochwasserBlock + osmBlock;
   }
 
   // ---- main flow ----
@@ -621,19 +668,36 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
       var lat = parseFloat(place.lat), lon = parseFloat(place.lon);
 
       setStatus('loading', 'Amtliche Katasterdaten werden abgefragt …');
-      var flurFeatures = [], gebFeatures = [], alkisError = false;
+      var flurFeatures = [], gebFeatures = [], nutzFeatures = [], alkisError = false;
       try {
-        var pair = await Promise.all([
+        var trio = await Promise.all([
           queryAlkis('nora:v_al_flurstueck', lat, lon),
-          queryAlkis('nora:v_al_gebaeude', lat, lon)
+          queryAlkis('nora:v_al_gebaeude', lat, lon),
+          queryAlkis('nora:v_al_tatsaechliche_nutzung', lat, lon)
         ]);
-        flurFeatures = pair[0]; gebFeatures = pair[1];
+        flurFeatures = trio[0]; gebFeatures = trio[1]; nutzFeatures = trio[2];
       } catch (e) {
         console.warn('ALKIS WFS error', e);
         alkisError = true;
       }
       var flurstueck = pickFeature(flurFeatures, lon, lat);
       var gebaeude = pickFeature(gebFeatures, lon, lat);
+      var nutzung = pickFeature(nutzFeatures, lon, lat);
+
+      setStatus('loading', 'Hochwasserrisiko wird abgefragt …');
+      var uesgFeatures = [], hq100Features = [], hochwasserError = false;
+      try {
+        var flood = await Promise.all([
+          queryHochwasser('Ueberschwemmungsgebiet:UESG', lat, lon),
+          queryHochwasser('Ueberschwemmungsgebiet:HQ100', lat, lon)
+        ]);
+        uesgFeatures = flood[0]; hq100Features = flood[1];
+      } catch (e) {
+        console.warn('LUBW WFS error', e);
+        hochwasserError = true;
+      }
+      var uesgHit = uesgFeatures.some(function(f){ return featureContainsPoint(f, lon, lat); });
+      var hq100Hit = hq100Features.some(function(f){ return featureContainsPoint(f, lon, lat); });
 
       setStatus('loading', 'Ergänzende OSM-Daten werden abgefragt …');
       var osmTags = null, osmError = false;
@@ -645,7 +709,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
       }
 
       renderMap(lat, lon, flurstueck, gebaeude);
-      render({ place: place, flurstueck: flurstueck, gebaeude: gebaeude, osm: osmTags, osmError: osmError, alkisError: alkisError });
+      render({ place: place, flurstueck: flurstueck, gebaeude: gebaeude, nutzung: nutzung, osm: osmTags, osmError: osmError, alkisError: alkisError, hochwasserError: hochwasserError, uesgHit: uesgHit, hq100Hit: hq100Hit });
 
       var displayName = place.address ? [place.address.road, place.address.house_number, place.address.postcode, (place.address.city||place.address.town||place.address.village)].filter(Boolean).join(' ') : place.display_name;
       setStatus('ok', 'Gefunden: ' + displayName);
@@ -661,7 +725,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
   els.btn.addEventListener('click', run);
   els.input.addEventListener('keydown', function(e){ if (e.key === 'Enter') run(); });
 
-  els.footer.innerHTML = 'Amtliche Daten: LGL Baden-Württemberg (ALKIS, Open Data, Datenlizenz Deutschland &ndash; Namensnennung 2.0), tagesaktuell. Ergänzende Gebäudeattribute: &copy; OpenStreetMap-Mitwirkende, ODbL &ndash; nur vorhanden, wenn von der Community gepflegt. Keine amtliche Auskunft, ersetzt keine Grundbuch- oder Katasterauskunft. 3D-Gebäudedaten (Dachform, Firsthöhe, LoD2) sind beim LGL nur als Massen-Download (CityGML) verfügbar, nicht als Live-Abfrage &ndash; daher hier nicht enthalten.';
+  els.footer.innerHTML = 'Amtliche Daten: LGL Baden-Württemberg (ALKIS &ndash; Flurstück, Gebäude, tatsächliche Nutzung; Open Data, Datenlizenz Deutschland &ndash; Namensnennung 2.0), tagesaktuell. Hochwasserrisiko: Landesanstalt für Umwelt Baden-Württemberg (LUBW), RIPS-GDI, öffentlich bereitgestellte Gebietskulissen. Ergänzende Gebäudeattribute: &copy; OpenStreetMap-Mitwirkende, ODbL &ndash; nur vorhanden, wenn von der Community gepflegt. Keine amtliche Auskunft, ersetzt keine Grundbuch-, Kataster- oder Hochwasserauskunft. 3D-Gebäudedaten (Dachform, Firsthöhe, LoD2) sind beim LGL nur als Massen-Download (CityGML) verfügbar, nicht als Live-Abfrage &ndash; daher hier nicht enthalten. Bodenrichtwerte und allgemeiner Denkmalschutz sind in Baden-Württemberg nicht als offene API verfügbar.';
 
   // boot with prefilled example
   try { ensureMap(); } catch (e) { console.warn('Kartenbibliothek nicht verfügbar', e); }
