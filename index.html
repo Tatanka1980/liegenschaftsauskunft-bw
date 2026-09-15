@@ -422,7 +422,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
   var map = null, markerLayer = null, parcelLayer = null, buildingLayer = null;
   var CESIUM_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/cesium/1.145.0/';
   var LOD2_TILESET_URL = 'https://sgx.geodatenzentrum.de/gdz_basemapde_3d_gebaeude/lod2_4326_null.json';
-  var cesiumViewer = null, cesiumLoadPromise = null, lastLatLon = null, mapMode = '2d';
+  var cesiumViewer = null, cesiumLoadPromise = null, lastLatLon = null, mapMode = '2d', cesiumMarker = null;
 
   function setStatus(state, text){
     els.status.dataset.state = state;
@@ -629,6 +629,19 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
 
   function flyTo3D(lat, lon){
     if (!cesiumViewer) return;
+    if (cesiumMarker){ cesiumViewer.entities.remove(cesiumMarker); cesiumMarker = null; }
+    var accentColor = Cesium.Color.fromCssColorString(getVar('--accent'));
+    cesiumMarker = cesiumViewer.entities.add({
+      position: Cesium.Cartesian3.fromDegrees(lon, lat),
+      point: {
+        pixelSize: 14,
+        color: accentColor,
+        outlineColor: Cesium.Color.WHITE,
+        outlineWidth: 3,
+        heightReference: Cesium.HeightReference.CLAMP_TO_GROUND,
+        disableDepthTestDistance: Number.POSITIVE_INFINITY
+      }
+    });
     cesiumViewer.camera.flyTo({
       destination: Cesium.Cartesian3.fromDegrees(lon, lat, 230),
       orientation: { heading: Cesium.Math.toRadians(25), pitch: Cesium.Math.toRadians(-38), roll: 0 },
