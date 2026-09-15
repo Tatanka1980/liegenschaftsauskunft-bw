@@ -1,0 +1,670 @@
+<title>Liegenschaftsauskunft BW</title>
+<meta name="color-scheme" content="light dark">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,400&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+
+<style>
+/* ============ Leaflet core (vendored, required) ============ */
+.leaflet-pane,.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-tile-container,.leaflet-pane>svg,.leaflet-pane>canvas,.leaflet-zoom-box,.leaflet-image-layer,.leaflet-layer{position:absolute;left:0;top:0}
+.leaflet-container{overflow:hidden}
+.leaflet-tile,.leaflet-marker-icon,.leaflet-marker-shadow{-webkit-user-select:none;-moz-user-select:none;user-select:none;-webkit-user-drag:none}
+.leaflet-tile::selection{background:transparent}
+.leaflet-safari .leaflet-tile{image-rendering:-webkit-optimize-contrast}
+.leaflet-safari .leaflet-tile-container{width:1600px;height:1600px;-webkit-transform-origin:0 0}
+.leaflet-marker-icon,.leaflet-marker-shadow{display:block}
+.leaflet-container .leaflet-overlay-pane svg{max-width:none!important;max-height:none!important}
+.leaflet-container .leaflet-marker-pane img,.leaflet-container .leaflet-shadow-pane img,.leaflet-container .leaflet-tile-pane img,.leaflet-container img.leaflet-image-layer,.leaflet-container .leaflet-tile{max-width:none!important;max-height:none!important;width:auto;padding:0}
+.leaflet-container img.leaflet-tile{mix-blend-mode:plus-lighter}
+.leaflet-container.leaflet-touch-zoom{-ms-touch-action:pan-x pan-y;touch-action:pan-x pan-y}
+.leaflet-container.leaflet-touch-drag{-ms-touch-action:pinch-zoom;touch-action:none;touch-action:pinch-zoom}
+.leaflet-container.leaflet-touch-drag.leaflet-touch-zoom{-ms-touch-action:none;touch-action:none}
+.leaflet-container{-webkit-tap-highlight-color:transparent}
+.leaflet-container a{-webkit-tap-highlight-color:rgba(51,181,229,.4)}
+.leaflet-tile{filter:inherit;visibility:hidden}
+.leaflet-tile-loaded{visibility:inherit}
+.leaflet-zoom-box{width:0;height:0;box-sizing:border-box;z-index:800}
+.leaflet-overlay-pane svg{-moz-user-select:none}
+.leaflet-pane{z-index:400}
+.leaflet-tile-pane{z-index:200}
+.leaflet-overlay-pane{z-index:400}
+.leaflet-shadow-pane{z-index:500}
+.leaflet-marker-pane{z-index:600}
+.leaflet-tooltip-pane{z-index:650}
+.leaflet-popup-pane{z-index:700}
+.leaflet-map-pane canvas{z-index:100}
+.leaflet-map-pane svg{z-index:200}
+.leaflet-vml-shape{width:1px;height:1px}
+.lvml{behavior:url(#default#VML);display:inline-block;position:absolute}
+.leaflet-control{position:relative;z-index:800;pointer-events:auto}
+.leaflet-top,.leaflet-bottom{position:absolute;z-index:1000;pointer-events:none}
+.leaflet-top{top:0}.leaflet-right{right:0}.leaflet-bottom{bottom:0}.leaflet-left{left:0}
+.leaflet-control{float:left;clear:both}
+.leaflet-right .leaflet-control{float:right}
+.leaflet-top .leaflet-control{margin-top:10px}
+.leaflet-bottom .leaflet-control{margin-bottom:10px}
+.leaflet-left .leaflet-control{margin-left:10px}
+.leaflet-right .leaflet-control{margin-right:10px}
+.leaflet-fade-anim .leaflet-popup{opacity:0;transition:opacity .2s linear}
+.leaflet-fade-anim .leaflet-map-pane .leaflet-popup{opacity:1}
+.leaflet-zoom-animated{transform-origin:0 0}
+svg.leaflet-zoom-animated{will-change:transform}
+.leaflet-zoom-anim .leaflet-zoom-animated{transition:transform .25s cubic-bezier(0,0,.25,1)}
+.leaflet-zoom-anim .leaflet-tile,.leaflet-pan-anim .leaflet-tile{transition:none}
+.leaflet-zoom-anim .leaflet-zoom-hide{visibility:hidden}
+.leaflet-interactive{cursor:pointer}
+.leaflet-grab{cursor:grab}
+.leaflet-crosshair,.leaflet-crosshair .leaflet-interactive{cursor:crosshair}
+.leaflet-popup-pane,.leaflet-control{cursor:auto}
+.leaflet-dragging .leaflet-grab,.leaflet-dragging .leaflet-grab .leaflet-interactive,.leaflet-dragging .leaflet-marker-draggable{cursor:grabbing}
+.leaflet-marker-icon,.leaflet-marker-shadow,.leaflet-image-layer,.leaflet-pane>svg path,.leaflet-tile-container{pointer-events:none}
+.leaflet-marker-icon.leaflet-interactive,.leaflet-image-layer.leaflet-interactive,.leaflet-pane>svg path.leaflet-interactive,svg.leaflet-image-layer.leaflet-interactive path{pointer-events:auto}
+.leaflet-container{background:#ddd;outline-offset:1px}
+.leaflet-container a{color:#0078A8}
+.leaflet-zoom-box{border:2px dotted #38f;background:rgba(255,255,255,.5)}
+.leaflet-bar{box-shadow:0 1px 5px rgba(0,0,0,.4);border-radius:8px;overflow:hidden}
+.leaflet-bar a{background-color:#fff;border-bottom:1px solid #e5e0d5;width:28px;height:28px;line-height:28px;display:block;text-align:center;text-decoration:none;color:#22262a;font:600 16px/28px var(--font-mono)}
+.leaflet-bar a:hover,.leaflet-bar a:focus{background-color:#f4f1ea}
+.leaflet-bar a.leaflet-disabled{cursor:default;background-color:#f4f4f4;color:#bbb}
+.leaflet-touch .leaflet-bar a{width:30px;height:30px;line-height:30px}
+.leaflet-control-attribution{background:rgba(255,255,255,.85);margin:0;padding:1px 6px;font-size:10px}
+.leaflet-control-attribution a{text-decoration:none}
+.leaflet-popup{position:absolute;text-align:center;margin-bottom:20px}
+.leaflet-popup-content-wrapper{padding:1px;text-align:left;border-radius:10px}
+.leaflet-popup-content{margin:10px 14px;line-height:1.4;font-size:12.5px;min-height:1px}
+.leaflet-popup-tip-container{width:40px;height:20px;position:absolute;left:50%;margin-top:-1px;margin-left:-20px;overflow:hidden;pointer-events:none}
+.leaflet-popup-tip{width:17px;height:17px;padding:1px;margin:-10px auto 0;transform:rotate(45deg)}
+.leaflet-popup-content-wrapper,.leaflet-popup-tip{background:var(--surface,#fff);color:var(--text,#222);box-shadow:0 3px 14px rgba(0,0,0,.3)}
+.leaflet-container a.leaflet-popup-close-button{position:absolute;top:0;right:0;border:none;text-align:center;width:24px;height:24px;font:16px/24px sans-serif;color:#757575;text-decoration:none;background:transparent}
+.leaflet-popup-scrolled{overflow:auto}
+.leaflet-div-icon{background:transparent;border:none}
+
+/* ============ Design tokens ============ */
+:root{
+  --bg:#F7F3EA;
+  --surface:#FFFEFB;
+  --surface-2:#F0EBDD;
+  --border:#DED5BE;
+  --text:#22221D;
+  --text-muted:#726C5C;
+  --accent:#0E6E64;
+  --accent-ink:#053E38;
+  --accent-soft:#DCEEEB;
+  --amtlich:#93650E;
+  --amtlich-soft:#F1E4C8;
+  --osm:#3A5A8C;
+  --osm-soft:#E1E9F4;
+  --missing:#A6512F;
+  --missing-soft:#F3E2D8;
+  --focus:#0E6E64;
+  --grid-line: rgba(34,34,29,0.05);
+  --font-display:'IBM Plex Sans',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --font-mono:'IBM Plex Mono',ui-monospace,'SF Mono',Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#15170F;
+    --surface:#1D2016;
+    --surface-2:#262A1B;
+    --border:#3A3C2C;
+    --text:#EDEBDD;
+    --text-muted:#A6A18C;
+    --accent:#39B3A4;
+    --accent-ink:#B7ECE3;
+    --accent-soft:#1E3733;
+    --amtlich:#DDB05B;
+    --amtlich-soft:#3A2F16;
+    --osm:#8AAEE6;
+    --osm-soft:#22314C;
+    --missing:#E38F66;
+    --missing-soft:#3B281D;
+    --focus:#39B3A4;
+    --grid-line: rgba(237,235,221,0.045);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#15170F;
+  --surface:#1D2016;
+  --surface-2:#262A1B;
+  --border:#3A3C2C;
+  --text:#EDEBDD;
+  --text-muted:#A6A18C;
+  --accent:#39B3A4;
+  --accent-ink:#B7ECE3;
+  --accent-soft:#1E3733;
+  --amtlich:#DDB05B;
+  --amtlich-soft:#3A2F16;
+  --osm:#8AAEE6;
+  --osm-soft:#22314C;
+  --missing:#E38F66;
+  --missing-soft:#3B281D;
+  --focus:#39B3A4;
+  --grid-line: rgba(237,235,221,0.045);
+}
+
+*{box-sizing:border-box}
+@media (prefers-reduced-motion: reduce){ *{animation-duration:.001ms!important;transition-duration:.001ms!important} }
+
+body{
+  background:
+    linear-gradient(var(--grid-line) 1px, transparent 1px) 0 0/32px 32px,
+    linear-gradient(90deg, var(--grid-line) 1px, transparent 1px) 0 0/32px 32px,
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-display);
+  padding-inline:20px;
+  padding-block:28px;
+}
+a{color:var(--accent)}
+:focus-visible{outline:2px solid var(--focus);outline-offset:2px;border-radius:4px}
+
+.wrap{max-width:1180px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+
+/* ---- header ---- */
+header{display:flex;flex-direction:column;gap:4px}
+.eyebrow{
+  font-family:var(--font-mono);
+  font-size:11px;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  color:var(--accent);
+  display:flex;align-items:center;gap:8px;
+}
+.eyebrow::before{content:"";width:7px;height:7px;border-radius:1px;background:var(--accent);display:inline-block;transform:rotate(45deg)}
+h1{margin:0;font-size:clamp(22px,3vw,30px);font-weight:700;letter-spacing:-.01em;text-wrap:balance}
+.subtitle{margin:0;color:var(--text-muted);font-size:14px;max-width:62ch}
+
+/* ---- search ---- */
+.search-panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:16px;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);
+}
+.search-row{display:flex;gap:10px;flex-wrap:wrap}
+.search-row label{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+#addressInput{
+  flex:1 1 320px;
+  min-width:0;
+  padding:12px 14px;
+  border:1.5px solid var(--border);
+  border-radius:9px;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--font-display);
+  font-size:15px;
+}
+#addressInput:focus-visible{border-color:var(--accent)}
+button.primary{
+  background:var(--accent);
+  color:#fff;
+  border:none;
+  padding:12px 20px;
+  border-radius:9px;
+  font-family:var(--font-display);
+  font-weight:600;
+  font-size:15px;
+  cursor:pointer;
+  white-space:nowrap;
+  transition:background-color .15s ease;
+}
+button.primary:hover{background:var(--accent-ink)}
+button.primary:disabled{opacity:.55;cursor:progress}
+.hint{font-size:12.5px;color:var(--text-muted)}
+.hint b{color:var(--text);font-weight:600}
+
+.status-line{
+  display:flex;align-items:center;gap:8px;
+  font-family:var(--font-mono);font-size:12.5px;color:var(--text-muted);
+  min-height:18px;
+}
+.status-line[data-state="loading"]::before{
+  content:"";width:9px;height:9px;border-radius:50%;
+  border:2px solid var(--accent-soft);border-top-color:var(--accent);
+  animation:spin .7s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+.status-line[data-state="error"]{color:var(--missing)}
+.status-line[data-state="error"]::before{content:"⚠";color:var(--missing)}
+.status-line[data-state="ok"]::before{content:"✓";color:var(--accent)}
+
+/* ---- main layout ---- */
+.main-grid{
+  display:grid;
+  grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);
+  gap:16px;
+  align-items:start;
+}
+@media (max-width:860px){ .main-grid{grid-template-columns:1fr} }
+
+#map{
+  height:460px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:var(--surface-2);
+}
+@media (max-width:860px){ #map{height:320px} }
+
+.panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  overflow:hidden;
+}
+
+/* summary strip */
+.stat-row{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(120px,1fr));
+  border-bottom:1px solid var(--border);
+}
+.stat{
+  padding:14px 16px;
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:3px;
+}
+.stat:last-child{border-right:none}
+.stat .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.07em;color:var(--text-muted)}
+.stat .v{font-family:var(--font-mono);font-size:19px;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.stat .v.muted{color:var(--text-muted);font-size:14px;font-weight:500}
+
+/* record sections */
+.record{border-bottom:1px solid var(--border)}
+.record:last-child{border-bottom:none}
+.record-head{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:12px 16px 8px;
+}
+.record-head h2{margin:0;font-size:13px;font-weight:600;letter-spacing:.01em}
+.badge{
+  font-family:var(--font-mono);
+  font-size:10.5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;
+  padding:3px 8px;border-radius:100px;white-space:nowrap;
+}
+.badge.amtlich{background:var(--amtlich-soft);color:var(--amtlich)}
+.badge.osm{background:var(--osm-soft);color:var(--osm)}
+
+dl.fields{margin:0;padding:2px 16px 14px;display:grid;grid-template-columns:auto 1fr;gap:7px 14px}
+dl.fields dt{font-size:12.5px;color:var(--text-muted);align-self:baseline}
+dl.fields dd{margin:0;font-family:var(--font-mono);font-size:13.5px;font-variant-numeric:tabular-nums;align-self:baseline;word-break:break-word}
+dl.fields dd.missing{font-family:var(--font-display);font-size:12.5px;color:var(--missing);font-style:italic}
+dl.fields dd .unit{color:var(--text-muted);font-family:var(--font-display);font-size:12px;margin-left:2px}
+
+.notice{
+  margin:0 16px 14px;padding:9px 12px;border-radius:8px;
+  background:var(--missing-soft);color:var(--missing);
+  font-size:12.5px;display:flex;gap:7px;align-items:flex-start;
+}
+.notice.info{background:var(--surface-2);color:var(--text-muted)}
+
+.legend{
+  display:flex;flex-wrap:wrap;gap:14px;
+  font-size:12px;color:var(--text-muted);
+  padding:2px 2px 0;
+}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:10px;height:10px;border-radius:2px;display:inline-block}
+.legend i.amtlich{background:var(--amtlich)}
+.legend i.osm{background:var(--osm)}
+
+footer{
+  font-size:12px;color:var(--text-muted);line-height:1.6;
+  padding-top:4px;
+}
+footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset:2px}
+
+.empty-note{padding:16px;font-size:13px;color:var(--text-muted)}
+
+.pin{
+  width:16px;height:16px;border-radius:50% 50% 50% 0;
+  background:var(--accent);
+  border:2px solid var(--surface);
+  transform:rotate(-45deg);
+  box-shadow:0 1px 4px rgba(0,0,0,.35);
+}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">plan4software · Vertriebs-Werkzeug</span>
+    <h1>Liegenschaftsauskunft BW</h1>
+    <p class="subtitle">Adresse eingeben, amtliche Flurstücks- und Gebäudedaten aus dem ALKIS-Kataster des LGL Baden-Württemberg sowie ergänzende Angaben aus OpenStreetMap abrufen.</p>
+  </header>
+
+  <div class="search-panel">
+    <div class="search-row">
+      <label for="addressInput">Adresse</label>
+      <input id="addressInput" type="text" autocomplete="off" placeholder="Straße Hausnummer, PLZ Ort" value="Marktplatz 1, 79312 Emmendingen">
+      <button class="primary" id="searchBtn" type="button">Daten abrufen</button>
+    </div>
+    <p class="hint">Beispiel vorausgefüllt (<b>Rathaus Emmendingen</b>) &mdash; einfach überschreiben. Gilt nur für Adressen in Baden-Württemberg.</p>
+    <p class="status-line" id="statusLine" data-state="idle"></p>
+  </div>
+
+  <div class="main-grid">
+    <div id="map" role="img" aria-label="Kartenausschnitt mit Flurstücks- und Gebäudeumriss"></div>
+
+    <div class="panel" id="resultsPanel">
+      <div class="empty-note" id="emptyNote">Noch keine Abfrage ausgeführt.</div>
+    </div>
+  </div>
+
+  <footer id="footerNote"></footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var BW_VIEWBOX = "7.50,49.80,10.50,47.53"; // left,top,right,bottom (lon,lat)
+  var WFS_BASE = "https://owsproxy.lgl-bw.de/owsproxy/wfs/WFS_LGL-BW_ALKIS?service=WFS&version=2.0.0&request=GetFeature&outputFormat=application/json&srsName=EPSG:4326";
+  var BBOX_DELTA = 0.00045; // ~ 35-45m depending on latitude, enough to catch neighbouring bbox candidates
+
+  var els = {
+    input: document.getElementById('addressInput'),
+    btn: document.getElementById('searchBtn'),
+    status: document.getElementById('statusLine'),
+    map: document.getElementById('map'),
+    results: document.getElementById('resultsPanel'),
+    empty: document.getElementById('emptyNote'),
+    footer: document.getElementById('footerNote')
+  };
+
+  var map = null, markerLayer = null, parcelLayer = null, buildingLayer = null;
+
+  function setStatus(state, text){
+    els.status.dataset.state = state;
+    els.status.textContent = text || '';
+  }
+
+  function fmtNum(n){
+    if (n === null || n === undefined || isNaN(n)) return null;
+    return Number(n).toLocaleString('de-DE');
+  }
+
+  function esc(s){
+    var d = document.createElement('div');
+    d.textContent = String(s);
+    return d.innerHTML;
+  }
+
+  // ---- ray-casting point-in-polygon, supports Polygon & MultiPolygon (GeoJSON [lon,lat]) ----
+  function ringContains(ring, lon, lat){
+    var inside = false;
+    for (var i = 0, j = ring.length - 1; i < ring.length; j = i++){
+      var xi = ring[i][0], yi = ring[i][1];
+      var xj = ring[j][0], yj = ring[j][1];
+      var intersect = ((yi > lat) !== (yj > lat)) &&
+        (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+      if (intersect) inside = !inside;
+    }
+    return inside;
+  }
+  function polygonContains(coords, lon, lat){
+    // coords: array of rings, first is outer
+    if (!coords || !coords.length) return false;
+    if (!ringContains(coords[0], lon, lat)) return false;
+    for (var h = 1; h < coords.length; h++){
+      if (ringContains(coords[h], lon, lat)) return false; // inside a hole
+    }
+    return true;
+  }
+  function featureContainsPoint(feature, lon, lat){
+    var g = feature.geometry;
+    if (!g) return false;
+    if (g.type === 'Polygon') return polygonContains(g.coordinates, lon, lat);
+    if (g.type === 'MultiPolygon'){
+      for (var k = 0; k < g.coordinates.length; k++){
+        if (polygonContains(g.coordinates[k], lon, lat)) return true;
+      }
+    }
+    return false;
+  }
+  function centroidOf(feature){
+    var g = feature.geometry, ring;
+    if (g.type === 'Polygon') ring = g.coordinates[0];
+    else if (g.type === 'MultiPolygon') ring = g.coordinates[0][0];
+    else return [0,0];
+    var sx=0, sy=0;
+    ring.forEach(function(p){ sx+=p[0]; sy+=p[1]; });
+    return [sx/ring.length, sy/ring.length];
+  }
+  function pickFeature(features, lon, lat){
+    if (!features || !features.length) return null;
+    if (features.length === 1) return features[0];
+    var containing = features.filter(function(f){ return featureContainsPoint(f, lon, lat); });
+    if (containing.length) return containing[0];
+    // fallback: nearest centroid
+    var best = features[0], bestD = Infinity;
+    features.forEach(function(f){
+      var c = centroidOf(f);
+      var d = Math.pow(c[0]-lon,2) + Math.pow(c[1]-lat,2);
+      if (d < bestD){ bestD = d; best = f; }
+    });
+    return best;
+  }
+
+  // ---- data fetchers ----
+  async function geocode(address){
+    var url = "https://nominatim.openstreetmap.org/search?format=json&addressdetails=1&limit=1&countrycodes=de"
+      + "&bounded=1&viewbox=" + BW_VIEWBOX + "&q=" + encodeURIComponent(address);
+    var res;
+    try {
+      res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+    } catch (e) {
+      throw new Error('Adresssuche (nominatim.openstreetmap.org) nicht erreichbar. Firmennetzwerk/Firewall/Proxy prüfen, ob diese Domain freigegeben ist.');
+    }
+    if (!res.ok) throw new Error('Adresssuche fehlgeschlagen (HTTP ' + res.status + (res.status === 429 ? ', zu viele Anfragen kurz hintereinander – kurz warten' : '') + ')');
+    var data = await res.json();
+    if (!data.length) throw new Error('Adresse in Baden-Württemberg nicht gefunden. Schreibweise prüfen (Straße, Hausnummer, PLZ, Ort).');
+    return data[0];
+  }
+
+  async function queryAlkis(typeName, lat, lon){
+    var d = BBOX_DELTA;
+    var bbox = (lon-d) + ',' + (lat-d) + ',' + (lon+d) + ',' + (lat+d) + ',EPSG:4326';
+    var url = WFS_BASE + '&typeNames=' + typeName + '&bbox=' + bbox;
+    var res = await fetch(url);
+    if (!res.ok) throw new Error('WFS-Fehler ' + res.status);
+    var json = await res.json();
+    return json.features || [];
+  }
+
+  async function queryOverpass(lat, lon){
+    var query = '[out:json][timeout:20];way(around:18,' + lat + ',' + lon + ')[building];out tags geom;';
+    var res = await fetch('https://overpass-api.de/api/interpreter', {
+      method: 'POST',
+      body: 'data=' + encodeURIComponent(query)
+    });
+    if (!res.ok) throw new Error('Overpass-Fehler ' + res.status);
+    var json = await res.json();
+    return (json.elements && json.elements[0]) ? json.elements[0].tags || {} : null;
+  }
+
+  // ---- map ----
+  function ensureMap(){
+    if (map) return map;
+    if (typeof L === 'undefined'){
+      els.map.innerHTML = '<div class="empty-note">Kartenbibliothek konnte nicht geladen werden.</div>';
+      return null;
+    }
+    map = L.map(els.map, { scrollWheelZoom: true }).setView([48.66, 9.35], 8);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 20,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>-Mitwirkende'
+    }).addTo(map);
+    return map;
+  }
+
+  function pinIcon(){
+    return L.divIcon({ className: '', html: '<div class="pin"></div>', iconSize: [16,16], iconAnchor: [8,14] });
+  }
+
+  function renderMap(lat, lon, parcelFeature, buildingFeature){
+    var m = ensureMap();
+    if (!m) return;
+    [markerLayer, parcelLayer, buildingLayer].forEach(function(l){ if (l) m.removeLayer(l); });
+
+    markerLayer = L.marker([lat, lon], { icon: pinIcon() }).addTo(m);
+    var bounds = L.latLngBounds([[lat, lon]]);
+
+    if (parcelFeature){
+      parcelLayer = L.geoJSON(parcelFeature, {
+        style: { color: getVar('--amtlich'), weight: 2, fillColor: getVar('--amtlich'), fillOpacity: 0.08, dashArray: '4 3' }
+      }).addTo(m);
+      bounds.extend(parcelLayer.getBounds());
+    }
+    if (buildingFeature){
+      buildingLayer = L.geoJSON(buildingFeature, {
+        style: { color: getVar('--accent'), weight: 2, fillColor: getVar('--accent'), fillOpacity: 0.22 }
+      }).addTo(m);
+      bounds.extend(buildingLayer.getBounds());
+    }
+    m.fitBounds(bounds.pad(0.35), { maxZoom: 19 });
+  }
+
+  function getVar(name){
+    return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#0E6E64';
+  }
+
+  // ---- rendering results ----
+  function statTile(k, v, muted){
+    return '<div class="stat"><div class="k">' + esc(k) + '</div><div class="v' + (muted?' muted':'') + '">' + v + '</div></div>';
+  }
+  function field(label, value, unit){
+    if (value === null || value === undefined || value === '') {
+      return '<dt>' + esc(label) + '</dt><dd class="missing">Nicht in offenen Datenquellen verfügbar</dd>';
+    }
+    return '<dt>' + esc(label) + '</dt><dd>' + esc(value) + (unit ? '<span class="unit">' + esc(unit) + '</span>' : '') + '</dd>';
+  }
+
+  function render(data){
+    var flur = data.flurstueck, geb = data.gebaeude, osm = data.osm;
+    var fp = flur ? flur.properties : null;
+    var gp = geb ? geb.properties : null;
+
+    var flaeche = fp ? fmtNum(fp.amtliche_flaeche) : null;
+    var gemeinde = fp ? fp.gemeinde_name : (data.place.address ? (data.place.address.city || data.place.address.town || data.place.address.village) : null);
+    var funktion = gp ? gp.gebaeudefunktion_name : null;
+    var stockwerke = osm ? (osm['building:levels'] || null) : null;
+
+    var stats = '<div class="stat-row">'
+      + statTile('Gemeinde', gemeinde ? esc(gemeinde) : '&ndash;', !gemeinde)
+      + statTile('Amtl. Fläche', flaeche ? flaeche + ' m²' : '&ndash;', !flaeche)
+      + statTile('Gebäudefunktion', funktion ? esc(funktion) : '&ndash;', !funktion)
+      + statTile('Stockwerke (OSM)', stockwerke ? esc(stockwerke) : '&ndash;', !stockwerke)
+      + '</div>';
+
+    var flurstueckBlock = '<div class="record"><div class="record-head"><h2>Flurstück</h2><span class="badge amtlich">Amtlich &middot; ALKIS</span></div>';
+    if (data.alkisError){
+      flurstueckBlock += '<p class="notice">Katasterdienst (owsproxy.lgl-bw.de) aktuell nicht erreichbar. Firmennetzwerk/Firewall prüfen &ndash; keine Aussage über Vorhandensein möglich.</p>';
+    } else if (fp){
+      flurstueckBlock += '<dl class="fields">'
+        + field('Flurstückskennzeichen', fp.flurstueckskennzeichen)
+        + field('Flurstücksnummer', fp.flurstueckstext)
+        + field('Gemarkung', fp.gemarkung_name)
+        + field('Gemeinde', fp.gemeinde_name)
+        + field('Amtliche Fläche', flaeche, 'm²')
+        + '</dl>';
+    } else {
+      flurstueckBlock += '<p class="notice">Für diese Koordinate wurde kein Flurstück im ALKIS-Kataster gefunden.</p>';
+    }
+    flurstueckBlock += '</div>';
+
+    var gebaeudeBlock = '<div class="record"><div class="record-head"><h2>Gebäude</h2><span class="badge amtlich">Amtlich &middot; ALKIS</span></div>';
+    if (data.alkisError){
+      gebaeudeBlock += '<p class="notice">Katasterdienst (owsproxy.lgl-bw.de) aktuell nicht erreichbar. Firmennetzwerk/Firewall prüfen &ndash; keine Aussage über Vorhandensein möglich.</p>';
+    } else if (gp){
+      gebaeudeBlock += '<dl class="fields">'
+        + field('Gebäudefunktion', gp.gebaeudefunktion_name)
+        + field('Eigenname', gp.eigenname)
+        + field('Adressen am Gebäude', gp.adressen)
+        + field('Hochhaus', gp.hochhaus === true ? 'Ja' : (gp.hochhaus === false ? 'Nein' : null))
+        + '</dl>';
+    } else {
+      gebaeudeBlock += '<p class="notice">Für diese Koordinate wurde kein Gebäude im ALKIS-Kataster gefunden.</p>';
+    }
+    gebaeudeBlock += '</div>';
+
+    var osmBlock = '<div class="record"><div class="record-head"><h2>Ergänzende Angaben</h2><span class="badge osm">Community &middot; OSM</span></div>';
+    if (data.osmError){
+      osmBlock += '<p class="notice">OpenStreetMap-Abfrage (Overpass) aktuell nicht erreichbar oder Zeitüberschreitung. Diese Angaben fehlen für diesen Abruf.</p>';
+    } else {
+      osmBlock += '<dl class="fields">'
+        + field('Stockwerke oberirdisch', osm ? osm['building:levels'] : null)
+        + field('Dachgeschosse', osm ? osm['roof:levels'] : null)
+        + field('Untergeschosse (Keller)', osm ? osm['building:levels:underground'] : null)
+        + field('Baujahr', osm ? (osm['year_of_construction'] || osm['start_date']) : null)
+        + field('Dachform', osm ? osm['roof:shape'] : null)
+        + field('Dachneigung', osm ? osm['roof:slope'] : null, osm && osm['roof:slope'] ? '°' : null)
+        + '</dl>';
+    }
+    osmBlock += '<div class="legend" style="padding:0 16px 14px"><span><i class="amtlich"></i>Amtliche Kataster-Umrisse</span><span><i class="osm"></i>Gebäudeumriss</span></div></div>';
+
+    els.results.innerHTML = stats + flurstueckBlock + gebaeudeBlock + osmBlock;
+  }
+
+  // ---- main flow ----
+  async function run(){
+    var address = els.input.value.trim();
+    if (!address) return;
+    els.btn.disabled = true;
+    setStatus('loading', 'Adresse wird gesucht …');
+
+    try {
+      var place = await geocode(address);
+      var lat = parseFloat(place.lat), lon = parseFloat(place.lon);
+
+      setStatus('loading', 'Amtliche Katasterdaten werden abgefragt …');
+      var flurFeatures = [], gebFeatures = [], alkisError = false;
+      try {
+        var pair = await Promise.all([
+          queryAlkis('nora:v_al_flurstueck', lat, lon),
+          queryAlkis('nora:v_al_gebaeude', lat, lon)
+        ]);
+        flurFeatures = pair[0]; gebFeatures = pair[1];
+      } catch (e) {
+        console.warn('ALKIS WFS error', e);
+        alkisError = true;
+      }
+      var flurstueck = pickFeature(flurFeatures, lon, lat);
+      var gebaeude = pickFeature(gebFeatures, lon, lat);
+
+      setStatus('loading', 'Ergänzende OSM-Daten werden abgefragt …');
+      var osmTags = null, osmError = false;
+      try {
+        osmTags = await queryOverpass(lat, lon);
+      } catch (e) {
+        console.warn('Overpass error', e);
+        osmError = true;
+      }
+
+      renderMap(lat, lon, flurstueck, gebaeude);
+      render({ place: place, flurstueck: flurstueck, gebaeude: gebaeude, osm: osmTags, osmError: osmError, alkisError: alkisError });
+
+      var displayName = place.address ? [place.address.road, place.address.house_number, place.address.postcode, (place.address.city||place.address.town||place.address.village)].filter(Boolean).join(' ') : place.display_name;
+      setStatus('ok', 'Gefunden: ' + displayName);
+    } catch (err) {
+      console.error(err);
+      setStatus('error', err.message || 'Abfrage fehlgeschlagen.');
+      els.results.innerHTML = '<div class="empty-note">Keine Ergebnisse. ' + esc(err.message || 'Abfrage fehlgeschlagen.') + '</div>';
+    } finally {
+      els.btn.disabled = false;
+    }
+  }
+
+  els.btn.addEventListener('click', run);
+  els.input.addEventListener('keydown', function(e){ if (e.key === 'Enter') run(); });
+
+  els.footer.innerHTML = 'Amtliche Daten: LGL Baden-Württemberg (ALKIS, Open Data, Datenlizenz Deutschland &ndash; Namensnennung 2.0), tagesaktuell. Ergänzende Gebäudeattribute: &copy; OpenStreetMap-Mitwirkende, ODbL &ndash; nur vorhanden, wenn von der Community gepflegt. Keine amtliche Auskunft, ersetzt keine Grundbuch- oder Katasterauskunft. 3D-Gebäudedaten (Dachform, Firsthöhe, LoD2) sind beim LGL nur als Massen-Download (CityGML) verfügbar, nicht als Live-Abfrage &ndash; daher hier nicht enthalten.';
+
+  // boot with prefilled example
+  try { ensureMap(); } catch (e) { console.warn('Kartenbibliothek nicht verfügbar', e); }
+  run();
+})();
+</script>
