@@ -242,13 +242,30 @@ button.primary:disabled{opacity:.55;cursor:progress}
 }
 @media (max-width:860px){ .main-grid{grid-template-columns:1fr} }
 
-#map{
+.map-col{display:flex;flex-direction:column;gap:8px}
+.map-tabs{display:inline-flex;gap:4px;background:var(--surface-2);border:1px solid var(--border);border-radius:9px;padding:3px;align-self:flex-start}
+.map-tab{
+  font-family:var(--font-display);font-size:12.5px;font-weight:600;
+  padding:6px 12px;border-radius:6px;border:none;background:transparent;color:var(--text-muted);cursor:pointer;
+}
+.map-tab.active{background:var(--surface);color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.06)}
+
+#map, #map3d{
   height:460px;
   border-radius:14px;
   border:1px solid var(--border);
   background:var(--surface-2);
+  position:relative;
+  overflow:hidden;
 }
-@media (max-width:860px){ #map{height:320px} }
+@media (max-width:860px){ #map, #map3d{height:320px} }
+
+#cesiumContainer{position:absolute;inset:0}
+.map3d-loading{
+  position:absolute;inset:0;z-index:2;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  padding:20px;font-size:12.5px;color:var(--text-muted);background:var(--surface-2);
+}
 
 .panel{
   background:var(--surface);
@@ -288,6 +305,16 @@ button.primary:disabled{opacity:.55;cursor:progress}
 }
 .badge.amtlich{background:var(--amtlich-soft);color:var(--amtlich)}
 .badge.osm{background:var(--osm-soft);color:var(--osm)}
+.badge.roadmap{background:var(--surface-2);color:var(--text-muted)}
+
+.roadmap-list{margin:0;padding:2px 16px 14px;display:grid;gap:8px}
+.roadmap-item{
+  display:grid;grid-template-columns:auto 1fr;gap:3px 14px;
+  padding:9px 11px;border:1px dashed var(--border);border-radius:8px;
+}
+.roadmap-item .rk{font-size:12.5px;font-weight:600;color:var(--text)}
+.roadmap-item .rs{grid-column:2;font-size:11.5px;color:var(--text-muted)}
+.roadmap-item .rv{grid-column:2;font-family:var(--font-mono);font-size:12px;color:var(--text-muted);font-style:italic}
 
 dl.fields{margin:0;padding:2px 16px 14px;display:grid;grid-template-columns:auto 1fr;gap:7px 14px}
 dl.fields dt{font-size:12.5px;color:var(--text-muted);align-self:baseline}
@@ -347,7 +374,17 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
   </div>
 
   <div class="main-grid">
-    <div id="map" role="img" aria-label="Kartenausschnitt mit Flurstücks- und Gebäudeumriss"></div>
+    <div class="map-col">
+      <div class="map-tabs" role="tablist">
+        <button class="map-tab active" id="tab2d" type="button" role="tab" aria-selected="true">2D &middot; Kataster</button>
+        <button class="map-tab" id="tab3d" type="button" role="tab" aria-selected="false">3D &middot; Gebäude</button>
+      </div>
+      <div id="map" role="img" aria-label="Kartenausschnitt mit Flurstücks- und Gebäudeumriss"></div>
+      <div id="map3d" hidden>
+        <div class="map3d-loading" id="map3dLoading">3D-Ansicht wird geladen …</div>
+        <div id="cesiumContainer"></div>
+      </div>
+    </div>
 
     <div class="panel" id="resultsPanel">
       <div class="empty-note" id="emptyNote">Noch keine Abfrage ausgeführt.</div>
@@ -371,12 +408,20 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     btn: document.getElementById('searchBtn'),
     status: document.getElementById('statusLine'),
     map: document.getElementById('map'),
+    map3d: document.getElementById('map3d'),
+    map3dLoading: document.getElementById('map3dLoading'),
+    cesiumContainer: document.getElementById('cesiumContainer'),
+    tab2d: document.getElementById('tab2d'),
+    tab3d: document.getElementById('tab3d'),
     results: document.getElementById('resultsPanel'),
     empty: document.getElementById('emptyNote'),
     footer: document.getElementById('footerNote')
   };
 
   var map = null, markerLayer = null, parcelLayer = null, buildingLayer = null;
+  var CESIUM_BASE = 'https://cdnjs.cloudflare.com/ajax/libs/cesium/1.145.0/';
+  var LOD2_TILESET_URL = 'https://sgx.geodatenzentrum.de/gdz_basemapde_3d_gebaeude/lod2_4326_null.json';
+  var cesiumViewer = null, cesiumLoadPromise = null, lastLatLon = null, mapMode = '2d';
 
   function setStatus(state, text){
     els.status.dataset.state = state;
@@ -544,6 +589,80 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || '#0E6E64';
   }
 
+  // ---- 3D view (Cesium.js + BKG basemap.de LoD2 3D-Tiles, keyless) ----
+  function loadCesiumLib(){
+    if (cesiumLoadPromise) return cesiumLoadPromise;
+    cesiumLoadPromise = new Promise(function(resolve, reject){
+      window.CESIUM_BASE_URL = CESIUM_BASE;
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = CESIUM_BASE + 'Widgets/widgets.min.css';
+      document.head.appendChild(link);
+      var script = document.createElement('script');
+      script.src = CESIUM_BASE + 'Cesium.js';
+      script.onload = function(){ resolve(); };
+      script.onerror = function(){ reject(new Error('3D-Bibliothek (Cesium) konnte nicht geladen werden.')); };
+      document.head.appendChild(script);
+    });
+    return cesiumLoadPromise;
+  }
+
+  async function ensureCesiumViewer(){
+    if (cesiumViewer) return cesiumViewer;
+    await loadCesiumLib();
+    cesiumViewer = new Cesium.Viewer(els.cesiumContainer, {
+      imageryProvider: new Cesium.OpenStreetMapImageryProvider({ url: 'https://tile.openstreetmap.org/' }),
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+      geocoder: false, baseLayerPicker: false, sceneModePicker: false,
+      navigationHelpButton: false, homeButton: false, timeline: false,
+      animation: false, fullscreenButton: false, infoBox: false, selectionIndicator: false
+    });
+    try {
+      var tileset = await Cesium.Cesium3DTileset.fromUrl(LOD2_TILESET_URL);
+      cesiumViewer.scene.primitives.add(tileset);
+    } catch (e) {
+      console.warn('LoD2-Tileset konnte nicht geladen werden', e);
+    }
+    return cesiumViewer;
+  }
+
+  function flyTo3D(lat, lon){
+    if (!cesiumViewer) return;
+    cesiumViewer.camera.flyTo({
+      destination: Cesium.Cartesian3.fromDegrees(lon, lat, 230),
+      orientation: { heading: Cesium.Math.toRadians(25), pitch: Cesium.Math.toRadians(-38), roll: 0 },
+      duration: 1.4
+    });
+  }
+
+  function setMapMode(mode){
+    mapMode = mode;
+    els.tab2d.classList.toggle('active', mode === '2d');
+    els.tab3d.classList.toggle('active', mode === '3d');
+    els.tab2d.setAttribute('aria-selected', String(mode === '2d'));
+    els.tab3d.setAttribute('aria-selected', String(mode === '3d'));
+    els.map.hidden = mode !== '2d';
+    els.map3d.hidden = mode !== '3d';
+    if (mode === '2d' && map){ setTimeout(function(){ map.invalidateSize(); }, 60); }
+  }
+
+  async function activate3D(){
+    setMapMode('3d');
+    if (cesiumViewer){
+      setTimeout(function(){ cesiumViewer.resize(); cesiumViewer.scene.requestRender && cesiumViewer.scene.requestRender(); }, 60);
+      if (lastLatLon) flyTo3D(lastLatLon[0], lastLatLon[1]);
+      return;
+    }
+    try {
+      await ensureCesiumViewer();
+      els.map3dLoading.hidden = true;
+      if (lastLatLon) flyTo3D(lastLatLon[0], lastLatLon[1]);
+    } catch (e) {
+      console.warn('Cesium init error', e);
+      els.map3dLoading.textContent = '3D-Ansicht aktuell nicht verfügbar (' + (e.message || 'unbekannter Fehler') + ').';
+    }
+  }
+
   // ---- rendering results ----
   function statTile(k, v, muted){
     return '<div class="stat"><div class="k">' + esc(k) + '</div><div class="v' + (muted?' muted':'') + '">' + v + '</div></div>';
@@ -656,7 +775,17 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     }
     osmBlock += '<div class="legend" style="padding:0 16px 14px"><span><i class="amtlich"></i>Amtliche Kataster-Umrisse</span><span><i class="osm"></i>Gebäudeumriss</span></div></div>';
 
-    els.results.innerHTML = stats + flurstueckBlock + gebaeudeBlock + nutzungBlock + hochwasserBlock + osmBlock;
+    var roadmapBlock = '<div class="record"><div class="record-head"><h2>Weitere öffentlich abrufbare Informationen</h2><span class="badge roadmap">Roadmap &middot; MVP</span></div>'
+      + '<p class="notice info">Zeigt, was zusätzlich aus offenen Quellen technisch erschließbar wäre &ndash; für diese Abfrage (noch) nicht live berechnet.</p>'
+      + '<dl class="roadmap-list">'
+      + '<div class="roadmap-item"><span class="rk">Firsthöhe &amp; Traufhöhe</span><span class="rs">Quelle: LGL-BW INSPIRE-3D-Dienst (WFS_INSP_BW_Gebauede_3D_LoD2, live, x/y/z-Koordinaten)</span><span class="rv">Berechnung aus 3D-Geometrie pro Gebäude nötig</span></div>'
+      + '<div class="roadmap-item"><span class="rk">Dach- &amp; Fassadenfläche</span><span class="rs">Quelle: LGL-BW INSPIRE-3D-Dienst (live)</span><span class="rv">Berechnung aus 3D-Geometrie nötig</span></div>'
+      + '<div class="roadmap-item"><span class="rk">Giebel- &amp; Traufseite</span><span class="rs">Quelle: LGL-BW INSPIRE-3D-Dienst (live)</span><span class="rv">Ableitung aus Dachflächen-Ausrichtung nötig</span></div>'
+      + '</dl>'
+      + '<p class="notice info">Die 3D-Rohdaten sind hier bereits live abrufbar (siehe 3D-Kartenansicht oben) &ndash; die automatische Berechnung einzelner Maße daraus ist für dieses MVP bewusst nicht umgesetzt, um Umfang gering zu halten.</p>'
+      + '</div>';
+
+    els.results.innerHTML = stats + flurstueckBlock + gebaeudeBlock + nutzungBlock + hochwasserBlock + osmBlock + roadmapBlock;
   }
 
   // ---- main flow ----
@@ -669,6 +798,8 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
     try {
       var place = await geocode(address);
       var lat = parseFloat(place.lat), lon = parseFloat(place.lon);
+      lastLatLon = [lat, lon];
+      if (mapMode === '3d' && cesiumViewer) flyTo3D(lat, lon);
 
       setStatus('loading', 'Amtliche Katasterdaten werden abgefragt …');
       var flurFeatures = [], gebFeatures = [], nutzFeatures = [], alkisError = false;
@@ -727,8 +858,10 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
 
   els.btn.addEventListener('click', run);
   els.input.addEventListener('keydown', function(e){ if (e.key === 'Enter') run(); });
+  els.tab2d.addEventListener('click', function(){ setMapMode('2d'); });
+  els.tab3d.addEventListener('click', activate3D);
 
-  els.footer.innerHTML = 'Amtliche Daten: LGL Baden-Württemberg (ALKIS &ndash; Flurstück, Gebäude, tatsächliche Nutzung; Open Data, Datenlizenz Deutschland &ndash; Namensnennung 2.0), tagesaktuell. Hochwasserrisiko: Landesanstalt für Umwelt Baden-Württemberg (LUBW), RIPS-GDI, öffentlich bereitgestellte Gebietskulissen. Ergänzende Gebäudeattribute: &copy; OpenStreetMap-Mitwirkende, ODbL &ndash; nur vorhanden, wenn von der Community gepflegt. Keine amtliche Auskunft, ersetzt keine Grundbuch-, Kataster- oder Hochwasserauskunft. 3D-Gebäudedaten (Firsthöhe, Traufhöhe, Dach-/Fassadenfläche, Giebel-/Traufseite, LoD2) sind beim LGL nur als Massen-Download (CityGML, ca. 50 MB je Gemeinde) verfügbar, nicht als Live-Einzeladressabfrage &ndash; daher hier nicht enthalten. Bodenrichtwerte und allgemeiner Denkmalschutz sind in Baden-Württemberg ebenfalls nicht als offene API verfügbar.';
+  els.footer.innerHTML = 'Amtliche Daten: LGL Baden-Württemberg (ALKIS &ndash; Flurstück, Gebäude, tatsächliche Nutzung; Open Data, Datenlizenz Deutschland &ndash; Namensnennung 2.0), tagesaktuell. Hochwasserrisiko: Landesanstalt für Umwelt Baden-Württemberg (LUBW), RIPS-GDI, öffentlich bereitgestellte Gebietskulissen. 3D-Gebäudeansicht: Bundesamt für Kartographie und Geodäsie (BKG), basemap.de LoD2-3D-Tiles, bundesweit &amp; kostenfrei &ndash; Kartendarstellung mit Cesium.js. Ergänzende Gebäudeattribute: &copy; OpenStreetMap-Mitwirkende, ODbL &ndash; nur vorhanden, wenn von der Community gepflegt. Keine amtliche Auskunft, ersetzt keine Grundbuch-, Kataster- oder Hochwasserauskunft. Die rohen 3D-Gebäudedaten (LoD2) sind live abrufbar (siehe 3D-Ansicht); einzelne Maße wie Firsthöhe, Traufhöhe, Dach-/Fassadenfläche oder Giebel-/Traufseite daraus automatisiert zu berechnen, ist für dieses MVP bewusst nicht umgesetzt. Bodenrichtwerte und allgemeiner Denkmalschutz sind in Baden-Württemberg ebenfalls nicht als offene API verfügbar.';
 
   // boot with prefilled example
   try { ensureMap(); } catch (e) { console.warn('Kartenbibliothek nicht verfügbar', e); }
