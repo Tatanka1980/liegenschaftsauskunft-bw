@@ -649,7 +649,10 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
         + field('Baujahr', osm ? (osm['year_of_construction'] || osm['start_date']) : null)
         + field('Dachform', osm ? osm['roof:shape'] : null)
         + field('Dachneigung', osm ? osm['roof:slope'] : null, osm && osm['roof:slope'] ? '°' : null)
-        + '</dl>';
+        + field('Gesamthöhe (geschätzt)', osm ? osm['height'] : null, osm && osm['height'] ? 'm' : null)
+        + field('Dach-/Firsthöhe (geschätzt)', osm ? osm['roof:height'] : null, osm && osm['roof:height'] ? 'm' : null)
+        + '</dl>'
+        + '<p class="notice info">Höhenangaben sind, wenn vorhanden, von der OSM-Community frei erfasst &ndash; keine amtliche Vermessung, oft nicht gepflegt. Traufhöhe, Dach-/Fassadenfläche sowie Giebel-/Traufseite gibt es in Baden-Württemberg aktuell in keiner offenen Live-Quelle (nur als 3D-Massen-Download, siehe Fußzeile).</p>';
     }
     osmBlock += '<div class="legend" style="padding:0 16px 14px"><span><i class="amtlich"></i>Amtliche Kataster-Umrisse</span><span><i class="osm"></i>Gebäudeumriss</span></div></div>';
 
@@ -725,7 +728,7 @@ footer a{color:var(--text-muted);text-decoration:underline;text-underline-offset
   els.btn.addEventListener('click', run);
   els.input.addEventListener('keydown', function(e){ if (e.key === 'Enter') run(); });
 
-  els.footer.innerHTML = 'Amtliche Daten: LGL Baden-Württemberg (ALKIS &ndash; Flurstück, Gebäude, tatsächliche Nutzung; Open Data, Datenlizenz Deutschland &ndash; Namensnennung 2.0), tagesaktuell. Hochwasserrisiko: Landesanstalt für Umwelt Baden-Württemberg (LUBW), RIPS-GDI, öffentlich bereitgestellte Gebietskulissen. Ergänzende Gebäudeattribute: &copy; OpenStreetMap-Mitwirkende, ODbL &ndash; nur vorhanden, wenn von der Community gepflegt. Keine amtliche Auskunft, ersetzt keine Grundbuch-, Kataster- oder Hochwasserauskunft. 3D-Gebäudedaten (Dachform, Firsthöhe, LoD2) sind beim LGL nur als Massen-Download (CityGML) verfügbar, nicht als Live-Abfrage &ndash; daher hier nicht enthalten. Bodenrichtwerte und allgemeiner Denkmalschutz sind in Baden-Württemberg nicht als offene API verfügbar.';
+  els.footer.innerHTML = 'Amtliche Daten: LGL Baden-Württemberg (ALKIS &ndash; Flurstück, Gebäude, tatsächliche Nutzung; Open Data, Datenlizenz Deutschland &ndash; Namensnennung 2.0), tagesaktuell. Hochwasserrisiko: Landesanstalt für Umwelt Baden-Württemberg (LUBW), RIPS-GDI, öffentlich bereitgestellte Gebietskulissen. Ergänzende Gebäudeattribute: &copy; OpenStreetMap-Mitwirkende, ODbL &ndash; nur vorhanden, wenn von der Community gepflegt. Keine amtliche Auskunft, ersetzt keine Grundbuch-, Kataster- oder Hochwasserauskunft. 3D-Gebäudedaten (Firsthöhe, Traufhöhe, Dach-/Fassadenfläche, Giebel-/Traufseite, LoD2) sind beim LGL nur als Massen-Download (CityGML, ca. 50 MB je Gemeinde) verfügbar, nicht als Live-Einzeladressabfrage &ndash; daher hier nicht enthalten. Bodenrichtwerte und allgemeiner Denkmalschutz sind in Baden-Württemberg ebenfalls nicht als offene API verfügbar.';
 
   // boot with prefilled example
   try { ensureMap(); } catch (e) { console.warn('Kartenbibliothek nicht verfügbar', e); }
